@@ -10,5 +10,6 @@ func PropertyRoutes(router *gin.Engine) {
 	api := router.Group("/smart-prop-api/prop/")
 
 	api.POST("user-preferences", property_handlers.GetPreferencesHandler, middleware.JWTMiddleware())
+	api.GET("get-properties", property_handlers.GetPropertiesHandler, middleware.JWTMiddleware())
 
 }
