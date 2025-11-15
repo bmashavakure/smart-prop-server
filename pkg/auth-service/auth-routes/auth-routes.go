@@ -6,7 +6,7 @@ import (
 )
 
 func AuthRoutes(router *gin.Engine) {
-	api := router.Group("smart-prop-api/auth/")
+	api := router.Group("/smart-prop-api/auth/")
 
 	api.POST("register-user", auth_handlers.RegisterHandler)
 	api.POST("login-user", auth_handlers.LoginHandler)
