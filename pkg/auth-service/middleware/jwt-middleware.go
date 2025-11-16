@@ -9,7 +9,6 @@ import (
 	auth_utils "github.com/Brian-Mashavakure/smart-prop-server/pkg/auth-service/auth-utils"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 )
 
 // middleware function for handling jwt tokens in routes
@@ -29,12 +28,12 @@ func JWTMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		err := godotenv.Load()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Server configuration error"})
-			c.Abort()
-			return
-		}
+		//err := godotenv.Load()
+		//if err != nil {
+		//	c.JSON(http.StatusInternalServerError, gin.H{"error": "Server configuration error"})
+		//	c.Abort()
+		//	return
+		//}
 		jwtKey := []byte(os.Getenv("JWT_KEY"))
 
 		claims := &auth_utils.JWTClaims{}

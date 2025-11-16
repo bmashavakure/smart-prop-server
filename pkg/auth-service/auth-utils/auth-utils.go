@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,10 +22,10 @@ type JWTClaims struct {
 }
 
 func HashPassword(pwd string) string {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file")
-	}
+	//err := godotenv.Load()
+	//if err != nil {
+	//	log.Println("Error loading .env file")
+	//}
 
 	hashingCost := os.Getenv("HashCost")
 	intCost, intErr := strconv.Atoi(hashingCost)
@@ -57,10 +56,10 @@ func ComparePasswordAndHash(hashedPwd string, plainPwd string) bool {
 
 // hash strings for custom token
 func HashString(input string) string {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file")
-	}
+	//err := godotenv.Load()
+	//if err != nil {
+	//	log.Println("Error loading .env file")
+	//}
 	salt := os.Getenv("HASH_SALT")
 	byteInput := []byte(input + salt)
 
@@ -71,11 +70,11 @@ func HashString(input string) string {
 
 // generate jwt token func
 func GenerateJWTToken(dateTime string, userEmail string) (string, error) {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Printf("Error loading .env file")
-		return "", err
-	}
+	//err := godotenv.Load()
+	//if err != nil {
+	//	fmt.Printf("Error loading .env file")
+	//	return "", err
+	//}
 
 	jwtKey := []byte(os.Getenv("JWT_KEY"))
 	expirationTime := time.Now().Add(24 * time.Hour)
