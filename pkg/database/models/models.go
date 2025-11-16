@@ -9,7 +9,6 @@ import (
 
 type User struct {
 	gorm.Model
-	ID       uint   `gorm:"primaryKey;autoIncrement" json:"id"`
 	NAME     string `json:"name"`
 	EMAIL    string `json:"email"`
 	PASSWORD string `json:"password"`
@@ -42,7 +41,6 @@ type Booking struct {
 
 type Property struct {
 	gorm.Model
-	ID            uint            `gorm:"primaryKey;autoIncrement" json:"id"`
 	Title         string          `gorm:"size:500" json:"title"`
 	Description   string          `gorm:"type:text" json:"description"`
 	PropertyType  string          `gorm:"type:varchar(100);not null" json:"property_type"`
