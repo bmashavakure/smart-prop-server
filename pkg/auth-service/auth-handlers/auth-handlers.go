@@ -54,7 +54,7 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	finalResponse := utils.ReturnJsonResponse("success", "User created successfully", map[string]interface{}{"id": user.ID, "token": tokenString}, nil)
+	finalResponse := utils.ReturnJsonResponse("success", "User created successfully", map[string]interface{}{"user_id": user.ID, "token": tokenString}, nil)
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusOK, finalResponse)
 }
