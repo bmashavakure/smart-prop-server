@@ -17,5 +17,5 @@ func main() {
 	auth_routes.AuthRoutes(router)
 	property_routes.PropertyRoutes(router)
 
-	router.Run("8080")
+	router.Run(":8090")
 }
