@@ -36,7 +36,8 @@ type Booking struct {
 	CheckoutTime string `json:"checkout_time"`
 	UserID       uint   `json:"user_id"`
 
-	User User `gorm:"foreignKey:UserID"`
+	User     User     `gorm:"foreignKey:UserID"`
+	Property Property `gorm:"foreignKey:PropertyID"`
 }
 
 type Property struct {

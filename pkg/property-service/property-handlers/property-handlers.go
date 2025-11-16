@@ -14,7 +14,7 @@ import (
 )
 
 type PrefRequest struct {
-	EMAIL         string   `json:"email"`
+	USERID        uint     `json:"user_id"`
 	LOCATIONS     []string `json:"locations"`
 	BUDGET        string   `json:"budget"`
 	BEDROOMS      uint     `json:"bedrooms"`
@@ -28,16 +28,6 @@ func GetPreferencesHandler(c *gin.Context) {
 		fmt.Printf("Error: %v\n", err)
 		parseResponse := utils.ReturnJsonResponse("failed", "failed to bind json", nil, map[string]interface{}{"error": err.Error()})
 		c.JSON(http.StatusBadRequest, parseResponse)
-		return
-	}
-
-	//get user id
-	var user models.User
-	result := connector.DB.Where("email = ?", prefReq.EMAIL).First(&user)
-	if result.Error != nil {
-		log.Printf("Error occurred trying to find user:\n %n", result.Error)
-		resultResponse := utils.ReturnJsonResponse("failed", "User not found", nil, map[string]interface{}{"error": "user could not be found in our system"})
-		c.JSON(http.StatusBadRequest, resultResponse)
 		return
 	}
 
@@ -70,7 +60,7 @@ func GetPreferencesHandler(c *gin.Context) {
 
 	//preference
 	preference := models.Preferences{
-		UserID:        user.ID,
+		UserID:        prefReq.USERID,
 		LOCATIONS:     locationsJson,
 		BEDROOMS:      prefReq.BEDROOMS,
 		PROPERTY_SIZE: prefReq.PROPERTY_SIZE,

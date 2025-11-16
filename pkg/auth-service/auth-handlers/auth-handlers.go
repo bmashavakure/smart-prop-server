@@ -90,7 +90,7 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	finalResponse := utils.ReturnJsonResponse("success", "login successful", map[string]interface{}{"message": "login successful", "token": tokenString}, nil)
+	finalResponse := utils.ReturnJsonResponse("success", "login successful", map[string]interface{}{"user_id": user.ID, "token": tokenString}, nil)
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusOK, finalResponse)
 
