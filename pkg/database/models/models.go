@@ -20,7 +20,7 @@ type Preferences struct {
 	LOCATIONS     json.RawMessage `json:"locations"`
 	BUDGET        string          `json:"budget"`
 	BEDROOMS      uint            `json:"bedrooms"`
-	PROPERTY_SIZE uint            `json:"property_size"`
+	PROPERTY_SIZE float64         `json:"property_size"`
 	AMENITIES     json.RawMessage `json:"amenities"`
 
 	User User `gorm:"foreignKey:UserID"`
