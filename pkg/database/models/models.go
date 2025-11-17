@@ -52,11 +52,11 @@ type Property struct {
 	Bedrooms      uint            `json:"bedrooms"`
 	Bathrooms     uint            `json:"bathrooms"`
 	AreaSqft      float64         `json:"area_sqft"`
-	Amenities     json.RawMessage `json:"amenities"` // JSON string
+	Amenities     json.RawMessage `json:"amenities"`
 	SourceWebsite string          `gorm:"size:200;not null" json:"source_website"`
 	SourceURL     string          `gorm:"size:1000" json:"source_url"`
 	ExternalID    string          `gorm:"size:200" json:"external_id"`
-	ImageURLs     string          `gorm:"type:text" json:"image_urls"` // JSON string
+	ImageURLs     string          `gorm:"type:text" json:"image_urls"`
 	CreatedAt     time.Time       `json:"created_at"`
 	UpdatedAt     time.Time       `json:"updated_at"`
 	LastScrapedAt time.Time       `json:"last_scraped_at"`
