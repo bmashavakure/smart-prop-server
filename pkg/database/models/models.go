@@ -33,6 +33,7 @@ type Booking struct {
 	BookingTime  string `json:"booking_time"`
 	CheckoutDate string `json:"checkout_date"`
 	CheckoutTime string `json:"checkout_time"`
+	Status       string `json:"status"`
 	UserID       uint   `json:"user_id"`
 
 	User     User     `gorm:"foreignKey:UserID"`

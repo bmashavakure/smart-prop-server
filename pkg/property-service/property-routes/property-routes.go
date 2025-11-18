@@ -12,6 +12,7 @@ func PropertyRoutes(router *gin.Engine) {
 	api.POST("user-preferences", property_handlers.GetPreferencesHandler, middleware.JWTMiddleware())
 	api.POST("get-properties", property_handlers.GetPropertiesHandler, middleware.JWTMiddleware())
 	api.POST("create-booking", property_handlers.BookingHandler, middleware.JWTMiddleware())
+	api.POST("cancel-booking", property_handlers.CancelBookingHandler, middleware.JWTMiddleware())
 	api.POST("get-bookings", property_handlers.GetBookingsHandler, middleware.JWTMiddleware())
 
 }

@@ -218,6 +218,7 @@ func BookingHandler(c *gin.Context) {
 		BookingTime:  req.BookingTime,
 		CheckoutDate: req.CheckoutDate,
 		CheckoutTime: req.CheckoutTime,
+		Status:       "active",
 		UserID:       req.UserID,
 	}
 
@@ -233,6 +234,44 @@ func BookingHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Booking created successfully", map[string]interface{}{"booking_id": booking.ID}, nil))
 }
 
+func CancelBookingHandler(c *gin.Context) {
+	bookingID := c.Request.FormValue("booking_id")
+
+	if bookingID == "" {
+		log.Println("booking_id parameter is missing")
+		missingParamResponse := utils.ReturnJsonResponse("failed", "booking_id is required", nil, map[string]interface{}{"error": "booking_id parameter is missing"})
+		c.JSON(http.StatusBadRequest, missingParamResponse)
+		return
+	}
+
+	var booking models.Booking
+	bookingResult := connector.DB.Where("id = ?", bookingID).First(&booking)
+	if bookingResult.Error != nil {
+		log.Printf("Error occurred trying to find booking:\n %v", bookingResult.Error)
+		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "booking not found", nil, map[string]interface{}{"error": "booking does not exist"}))
+		return
+	}
+
+	// Check if booking is already cancelled
+	if booking.Status == "cancelled" {
+		log.Printf("Booking %s is already cancelled\n", bookingID)
+		c.JSON(http.StatusBadRequest, utils.ReturnJsonResponse("failed", "booking already cancelled", nil, map[string]interface{}{"error": "this booking has already been cancelled"}))
+		return
+	}
+
+	// Update booking status to cancelled
+	booking.Status = "cancelled"
+	updateResult := connector.DB.Save(&booking)
+	if updateResult.Error != nil {
+		log.Printf("Error occurred trying to cancel booking:\n %v", updateResult.Error)
+		c.JSON(http.StatusInternalServerError, utils.ReturnJsonResponse("failed", "failed to cancel booking", nil, map[string]interface{}{"error": updateResult.Error.Error()}))
+		return
+	}
+
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Booking cancelled successfully", map[string]interface{}{"booking_id": booking.ID}, nil))
+}
+
 func GetBookingsHandler(c *gin.Context) {
 	userID := c.Request.FormValue("user_id")
 
@@ -243,14 +282,53 @@ func GetBookingsHandler(c *gin.Context) {
 		return
 	}
 
-	var bookings []models.Booking
-	bookingsResult := connector.DB.Where("user_id = ?", userID).Find(&bookings)
-	if bookingsResult.Error != nil {
-		log.Printf("Error occurred trying to find bookings:\n %v", bookingsResult.Error)
-		c.JSON(http.StatusInternalServerError, utils.ReturnJsonResponse("failed", "failed to retrieve bookings", nil, map[string]interface{}{"error": bookingsResult.Error.Error()}))
+	// Use WaitGroup to fetch all bookings and active bookings concurrently
+	var wg sync.WaitGroup
+	var allBookings []models.Booking
+	var activeBookings []models.Booking
+	var allBookingsErr, activeBookingsErr error
+
+	wg.Add(2)
+
+	// Fetch all bookings in a goroutine
+	go func() {
+		defer wg.Done()
+		result := connector.DB.Where("user_id = ?", userID).Find(&allBookings)
+		if result.Error != nil {
+			allBookingsErr = result.Error
+		}
+	}()
+
+	// Fetch active bookings in a goroutine
+	go func() {
+		defer wg.Done()
+		result := connector.DB.Where("user_id = ? AND status = ?", userID, "active").Find(&activeBookings)
+		if result.Error != nil {
+			activeBookingsErr = result.Error
+		}
+	}()
+
+	// Wait for both queries to complete
+	wg.Wait()
+
+	// Check for errors
+	if allBookingsErr != nil {
+		log.Printf("Error occurred trying to find bookings:\n %v", allBookingsErr)
+		c.JSON(http.StatusInternalServerError, utils.ReturnJsonResponse("failed", "failed to retrieve bookings", nil, map[string]interface{}{"error": allBookingsErr.Error()}))
+		return
+	}
+
+	if activeBookingsErr != nil {
+		log.Printf("Error occurred trying to find active bookings:\n %v", activeBookingsErr)
+		c.JSON(http.StatusInternalServerError, utils.ReturnJsonResponse("failed", "failed to retrieve active bookings", nil, map[string]interface{}{"error": activeBookingsErr.Error()}))
 		return
 	}
 
 	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Bookings retrieved successfully", map[string]interface{}{"bookings": bookings, "count": len(bookings)}, nil))
+	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Bookings retrieved successfully", map[string]interface{}{
+		"all_bookings":       allBookings,
+		"all_bookings_count": len(allBookings),
+		"active_bookings":    activeBookings,
+		"active_count":       len(activeBookings),
+	}, nil))
 }
