@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 type MistralChatRequest struct {
@@ -30,10 +28,10 @@ type MistralChatResponse struct {
 }
 
 func MistralHandler(promptString string) (string, error) {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
-	}
+	//err := godotenv.Load()
+	//if err != nil {
+	//	fmt.Println("Error loading .env file")
+	//}
 
 	apiKey := os.Getenv("MISTRAL_API_KEY")
 	url := "https://api.mistral.ai/v1/chat/completions"
