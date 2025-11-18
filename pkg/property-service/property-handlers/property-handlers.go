@@ -282,53 +282,14 @@ func GetBookingsHandler(c *gin.Context) {
 		return
 	}
 
-	// Use WaitGroup to fetch all bookings and active bookings concurrently
-	var wg sync.WaitGroup
-	var allBookings []models.Booking
-	var activeBookings []models.Booking
-	var allBookingsErr, activeBookingsErr error
-
-	wg.Add(2)
-
-	// Fetch all bookings in a goroutine
-	go func() {
-		defer wg.Done()
-		result := connector.DB.Where("user_id = ?", userID).Find(&allBookings)
-		if result.Error != nil {
-			allBookingsErr = result.Error
-		}
-	}()
-
-	// Fetch active bookings in a goroutine
-	go func() {
-		defer wg.Done()
-		result := connector.DB.Where("user_id = ? AND status = ?", userID, "active").Find(&activeBookings)
-		if result.Error != nil {
-			activeBookingsErr = result.Error
-		}
-	}()
-
-	// Wait for both queries to complete
-	wg.Wait()
-
-	// Check for errors
-	if allBookingsErr != nil {
-		log.Printf("Error occurred trying to find bookings:\n %v", allBookingsErr)
-		c.JSON(http.StatusInternalServerError, utils.ReturnJsonResponse("failed", "failed to retrieve bookings", nil, map[string]interface{}{"error": allBookingsErr.Error()}))
-		return
-	}
-
-	if activeBookingsErr != nil {
-		log.Printf("Error occurred trying to find active bookings:\n %v", activeBookingsErr)
-		c.JSON(http.StatusInternalServerError, utils.ReturnJsonResponse("failed", "failed to retrieve active bookings", nil, map[string]interface{}{"error": activeBookingsErr.Error()}))
+	var bookings []models.Booking
+	bookingsResult := connector.DB.Where("user_id = ? AND status = ?", userID, "active").Find(&bookings)
+	if bookingsResult.Error != nil {
+		log.Printf("Error occurred trying to find bookings:\n %v", bookingsResult.Error)
+		c.JSON(http.StatusInternalServerError, utils.ReturnJsonResponse("failed", "failed to retrieve bookings", nil, map[string]interface{}{"error": bookingsResult.Error.Error()}))
 		return
 	}
 
 	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Bookings retrieved successfully", map[string]interface{}{
-		"all_bookings":       allBookings,
-		"all_bookings_count": len(allBookings),
-		"active_bookings":    activeBookings,
-		"active_count":       len(activeBookings),
-	}, nil))
+	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Bookings retrieved successfully", map[string]interface{}{"bookings": bookings}, nil))
 }
