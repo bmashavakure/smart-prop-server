@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"strconv"
-	"strings"
+	"encoding/json"
+	"fmt"
 
 	"github.com/Brian-Mashavakure/smart-prop-server/pkg/database/models"
 )
@@ -20,24 +20,31 @@ func ReturnJsonResponse(status string, message string, data map[string]interface
 
 // property ids seperator for ai response
 func NumbersSeparator(input string) ([]uint, error) {
-	lines := strings.Split(input, "\n")
-	numbers := make([]uint, 0, len(lines))
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
-		num, err := strconv.ParseUint(line, 10, 0)
-		if err != nil {
-			return nil, err
-		}
-
-		numbers = append(numbers, uint(num))
+	var nums []uint
+	if err := json.Unmarshal([]byte(input), &nums); err != nil {
+		fmt.Println("unmarshal error:", err)
+		return nil, err
 	}
 
-	return numbers, nil
+	return nums, nil
+	//lines := strings.Split(input, "\n")
+	//numbers := make([]uint, 0, len(lines))
+	//
+	//for _, line := range lines {
+	//	line = strings.TrimSpace(line)
+	//	if line == "" {
+	//		continue
+	//	}
+	//
+	//	num, err := strconv.ParseUint(line, 10, 0)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	numbers = append(numbers, uint(num))
+	//}
+	//
+	//return numbers, nil
 }
 
 // properties filter

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/Brian-Mashavakure/smart-prop-server/pkg/database/connector"
@@ -92,34 +93,65 @@ func GetPreferencesHandler(c *gin.Context) {
 func GetPropertiesHandler(c *gin.Context) {
 	userID := c.Request.FormValue("user_id")
 
+	// Use WaitGroup to fetch properties and preferences concurrently
+	var wg sync.WaitGroup
 	var properties []models.Property
-	propertyResult := connector.DB.Find(&properties)
-	if propertyResult.Error != nil {
-		log.Printf("Error occurred trying to find properties:\n %n", propertyResult.Error)
-		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Something went wrong", nil, map[string]interface{}{"error": propertyResult.Error.Error()}))
-		return
-	}
-
 	var userPref models.Preferences
-	prefResult := connector.DB.Where("user_id = ?", userID).First(&userPref)
-	if prefResult.Error != nil {
-		log.Printf("Error occurred trying to find user:\n %n", propertyResult.Error)
-		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Something went wrong finding preference", nil, map[string]interface{}{"error": prefResult.Error.Error()}))
+	var propertyErr, prefErr error
+
+	wg.Add(2)
+
+	// Fetch properties in a goroutine
+	go func() {
+		defer wg.Done()
+		result := connector.DB.Find(&properties)
+		if result.Error != nil {
+			propertyErr = result.Error
+		}
+	}()
+
+	// Fetch user preferences in a goroutine
+	go func() {
+		defer wg.Done()
+		result := connector.DB.Where("user_id = ?", userID).First(&userPref)
+		if result.Error != nil {
+			prefErr = result.Error
+		}
+	}()
+
+	// Wait for both queries to complete
+	wg.Wait()
+
+	// Check for errors after both queries complete
+	if propertyErr != nil {
+		log.Printf("Error occurred trying to find properties:\n %v", propertyErr)
+		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Something went wrong", nil, map[string]interface{}{"error": propertyErr.Error()}))
 		return
 	}
 
+	if prefErr != nil {
+		log.Printf("Error occurred trying to find user preferences:\n %v", prefErr)
+		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Something went wrong finding preference", nil, map[string]interface{}{"error": prefErr.Error()}))
+		return
+	}
+
+	// Get AI recommendations
 	recommendation, recErr := genai_service.GetPropertyRecommendations(userPref, properties)
 	if recErr != nil {
-		log.Printf("Error occurred trying to find recomendation:\n %n", propertyResult.Error)
+		log.Printf("Error occurred trying to find recommendation:\n %v", recErr)
 		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Property recommendation failed", nil, map[string]interface{}{"error": recErr.Error()}))
 		return
 	}
+
+	fmt.Printf("Recommendations: %s\n", recommendation)
+
 	idsList, idsError := utils.NumbersSeparator(recommendation)
 	if idsError != nil {
-		log.Printf("Error occurred trying to find recomendation:\n %n", propertyResult.Error)
-		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Property recommendation failed", nil, map[string]interface{}{"error": recErr.Error()}))
+		log.Printf("Error occurred trying to parse recommendation ids:\n %v", idsError)
+		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Property recommendation failed", nil, map[string]interface{}{"error": idsError.Error()}))
 		return
 	}
+
 	finalProperties := utils.FilterProperties(idsList, properties)
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Properties found", map[string]interface{}{"properties": finalProperties}, nil))

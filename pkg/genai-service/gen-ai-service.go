@@ -3,7 +3,9 @@ package genai_service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/Brian-Mashavakure/smart-prop-server/pkg/database/models"
 	"google.golang.org/genai"
@@ -13,6 +15,7 @@ func GenAiClient(prompt string) (string, error) {
 	ctx := context.Background()
 	aiClient, err := genai.NewClient(ctx, nil)
 	if err != nil {
+		fmt.Printf("Gen Ai Setup Client Error: %v\n", err.Error)
 		return "", err
 	}
 
@@ -24,6 +27,7 @@ func GenAiClient(prompt string) (string, error) {
 	if resultErr != nil {
 		return "", resultErr
 	}
+	fmt.Printf("Prompt Response: %s\n", result.Text())
 
 	return result.Text(), nil
 
@@ -31,32 +35,61 @@ func GenAiClient(prompt string) (string, error) {
 
 // property recommendation stuff
 func GetPropertyRecommendations(userPref models.Preferences, properties []models.Property) (string, error) {
-	prefsJson, prefsErr := json.Marshal(userPref)
+	// Use WaitGroup to marshal JSON concurrently
+	var wg sync.WaitGroup
+	var prefsJson, propertiesJson []byte
+	var prefsErr, propsErr error
+
+	wg.Add(2)
+
+	// Marshal user preferences in a goroutine
+	go func() {
+		defer wg.Done()
+		prefsJson, prefsErr = json.Marshal(userPref)
+	}()
+
+	// Marshal properties in a goroutine
+	go func() {
+		defer wg.Done()
+		propertiesJson, propsErr = json.Marshal(properties)
+	}()
+
+	// Wait for both marshaling operations to complete
+	wg.Wait()
+
+	// Check for errors
 	if prefsErr != nil {
 		return "", prefsErr
 	}
-
-	propertiesJson, propsErr := json.Marshal(properties)
 	if propsErr != nil {
 		return "", propsErr
 	}
 
-	//prompt build
+	// Build prompt
 	var prompt strings.Builder
-	prompt.WriteString("You are an expert real estate recommendation agent.\n")
-	prompt.WriteString("Your task is to analyze the provided user preferences and available properties and return the best 10 recommendations.\n")
-	prompt.WriteString("The are in square in square feet of the property suggested should be equal to or higher than the area in the user preferences and the address of the property suggested should match the types of areas provided in the locations in proximity and type of area from the user preferences.\n")
-	prompt.WriteString("In the user preferences pay close attention to the amenities and suggest properties that have the same amenities or amenities that are similar to those preferred by the user.\n")
-	prompt.WriteString("Return only the property ids of the best properties in the order of best to least recommendation. Dont add any other text or content to the response just return the ids for the properties\n")
+	prompt.WriteString("CRITICAL OUTPUT RULE: Your response must contain ONLY an array of property IDs. Do not include any explanations, descriptions, introductions, or concluding remarks. Output format must be exactly: [id1, id2, id3, ...]\n\n")
+	prompt.WriteString("Task: Analyze the provided user preferences and available properties to recommend the best 10 properties.\n")
+	prompt.WriteString("Criteria:\n")
+	prompt.WriteString("- Property size must be equal to or greater than the user's preferred size\n")
+	prompt.WriteString("- Location must match the types of areas specified in user preferences\n")
+	prompt.WriteString("- Amenities should closely match or be similar to those preferred by the user\n\n")
 
-	prompt.WriteString("---User Preferences\n")
+	prompt.WriteString("---User Preferences---\n")
 	prompt.WriteString(string(prefsJson))
 	prompt.WriteString("\n\n")
 
 	prompt.WriteString("---Available Properties---\n")
 	prompt.WriteString(string(propertiesJson))
+	prompt.WriteString("\n\n")
 
-	response, responseErr := GenAiClient(prompt.String())
+	prompt.WriteString("RESPONSE FORMAT (MANDATORY): Return ONLY the array of property IDs with no other text. Example: [23, 45, 67, 78, 65, 34, 21, 18, 90, 12]")
+
+	//response, responseErr := GenAiClient(prompt.String())
+	//if responseErr != nil {
+	//	return "", responseErr
+	//}
+
+	response, responseErr := MistralHandler(prompt.String())
 	if responseErr != nil {
 		return "", responseErr
 	}
