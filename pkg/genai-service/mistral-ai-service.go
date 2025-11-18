@@ -38,7 +38,7 @@ func MistralHandler(promptString string) (string, error) {
 
 	// mistral request
 	reqData := MistralChatRequest{
-		Model:       "mistral-small",
+		Model:       "mistral-medium-latest",
 		Temperature: 0.2,
 		Messages: []Message{
 			{Role: "user", Content: promptString},
