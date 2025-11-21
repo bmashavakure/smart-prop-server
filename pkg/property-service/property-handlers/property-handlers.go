@@ -145,16 +145,16 @@ func GetPropertiesHandler(c *gin.Context) {
 
 	fmt.Printf("Recommendations: %s\n", recommendation)
 
-	idsList, idsError := utils.NumbersSeparator(recommendation)
-	if idsError != nil {
-		log.Printf("Error occurred trying to parse recommendation ids:\n %v", idsError)
-		c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Property recommendation failed", nil, map[string]interface{}{"error": idsError.Error()}))
-		return
-	}
+	//idsList, idsError := utils.NumbersSeparator(recommendation)
+	//if idsError != nil {
+	//	log.Printf("Error occurred trying to parse recommendation ids:\n %v", idsError)
+	//	c.JSON(http.StatusNotFound, utils.ReturnJsonResponse("failed", "Property recommendation failed", nil, map[string]interface{}{"error": idsError.Error()}))
+	//	return
+	//}
 
-	finalProperties := utils.FilterProperties(idsList, properties)
+	//finalProperties := utils.FilterProperties(idsList, properties)
 	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Properties found", map[string]interface{}{"properties": finalProperties}, nil))
+	c.JSON(http.StatusOK, utils.ReturnJsonResponse("success", "Properties found", map[string]interface{}{"properties": properties}, nil))
 }
 
 type BookingReq struct {
